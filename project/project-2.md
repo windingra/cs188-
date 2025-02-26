@@ -322,36 +322,35 @@ def getAction(self, gameState: GameState):
 
 #### right
 
-其实和 Q1 差不多（因为我们当时的实现就挺不错了），改为评估当前状态就好了。
+其实和 Q1 差不多（因为我们当时的实现就挺不错了），改为评估当前状态就好了。加大惩罚系数
 
 ```python title="betterEvaluationFunction"
 def betterEvaluationFunction(currentGameState: GameState):
     """
-    DESCRIPTION: <write something here so we know what you did>
-    Just as what we do in ReflexAgent, but now we evaluate currentGameState
+    你的极端幽灵狩猎、能量豆抢食、食物吞噬、势不可挡的评估函数（问题5）。
+
+    描述：<在这里写一些内容以便我们知道你做了什么>
     """
-    "*** YOUR CODE HERE ***"
-    Pos = currentGameState.getPacmanPosition()
-    Food = currentGameState.getFood()
-    GhostStates = currentGameState.getGhostStates()
-    ScaredTimes = [ghostState.scaredTimer for ghostState in GhostStates]
-    foodList = Food.asList()
-    score = currentGameState.getScore()
-    for food in foodList:
-        score += 1 / util.manhattanDistance(Pos, food)
-    # Ghost evaluation
-    for i, ghostState in enumerate(GhostStates):
+    "*** 你可以在这里编写你的代码 ***"
+    successorGameState = currentGameState
+    newPos = successorGameState.getPacmanPosition()
+    newFood = successorGameState.getFood()
+    newGhostStates = successorGameState.getGhostStates()
+    newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+
+    "*** 你可以在这里编写你的代码 ***"
+    foodlist = newFood.asList()
+    score = successorGameState.getScore()
+    for food in foodlist:
+        score += 1/ util.manhattanDistance(newPos, food)
+    for i, ghostState in enumerate(newGhostStates):
         ghostPos = ghostState.getPosition()
-        distance = util.manhattanDistance(Pos, ghostPos)
-        if ScaredTimes[i] > 0:
+        distance = util.manhattanDistance(newPos, ghostPos)
+        if newScaredTimes[i] > 0:
             # Ghost is scared, it's good to be close
-            score += 2 / (distance + 1)
+            score += 4 / (distance + 1) # avoid ZeroDivisionError
         else:
-            # Ghost is not scared, avoid it
-            if distance < 2:
-                score -= 500  # Big penalty for being too close
-            else:
-                score -= 2 / (distance + 1)
+            score -= 40 / (distance + 1)  #离鬼越远越好
     return score
     util.raiseNotDefined()
 ```
