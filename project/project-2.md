@@ -159,88 +159,49 @@ def evaluationFunction(self, currentGameState: GameState, action):
 思路：getAction 仿照 Q1 中的
 
 ```python title="MinimaxAgent -> getAction v1"
-def getAction(self, gameState: GameState):
-    "*** YOUR CODE HERE ***"
-    # Pacman is always agent 0, and the agents move in order of increasing agent index.
-    legalActions = gameState.getLegalActions(0)
-    scores = self.getNextLevel(gameState, 0, 0)
-    bestScore = max(scores)
-    bestIndices = [
-        index for index in range(len(scores)) if scores[index] == bestScore
-    ]
-    chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-    return legalActions[chosenIndex]
-    util.raiseNotDefined()
+  def getAction(self, gameState: GameState):
+        """
+        使用 self.depth 和 self.evaluationFunction 从当前 gameState 返回极大极小动作。
+        这里有一些在实现极大极小时可能有用的方法调用。
+        gameState.getLegalActions(agentIndex):
+        返回一个代理的合法动作列表
+        agentIndex=0 表示 Pacman 幽灵的索引 >= 1
+        gameState.generateSuccessor(agentIndex, action):
+        返回代理执行动作后的后继游戏状态
+        gameState.getNumAgents():
+        返回游戏中的代理总数
+        gameState.isWin():
+        返回游戏状态是否为胜利状态
+        gameState.isLose():
+        返回游戏状态是否为失败状态
+        """
+        "*** 你可以在这里编写你的代码 ***"
+        def minimax(agentIndex, depth, gameState):
+            if gameState.isWin() or gameState.isLose() or depth == self.depth:
+                return self.evaluationFunction(gameState)
+            if agentIndex == 0:#取max
+                return max(minimax(1, depth, gameState.generateSuccessor(0, action)) for action in gameState.getLegalActions(0))
+                # return max(minimax(1, depth, gameState.generateSuccessor(agentIndex, action)) for action in gameState.getLegalActions(agentIndex))
+            else:
+                nextAgent = (agentIndex + 1) % gameState.getNumAgents()
+                nextid = (agentIndex + 1) % gameState.getNumAgents()
+                nextDepth = depth
+                if nextAgent == 0: #下一个是max ，深度加一
+                    nextDepth = depth + 1
+                # nextDepth = depth + 1 if nextAgent == 0 else depth
+                return min(minimax(nextid, nextDepth, gameState.generateSuccessor(agentIndex, action)) for action in gameState.getLegalActions(agentIndex))
+        legalMoves = gameState.getLegalActions(0)
+        # 选择一个最佳的动作
+        scores = [minimax(1, 0, gameState.generateSuccessor(0, action)) for action in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices)  # 在最佳动作中随机选择一个
+        return legalMoves[chosenIndex]
+        util.raiseNotDefined()
 
-# return a scores: [int]
-def getNextLevel(self, gameState: GameState, agentIndex, level):
-    agentIndex = agentIndex % gameState.getNumAgents()
-    legalActions = gameState.getLegalActions(agentIndex)
-    successors = [
-        gameState.generateSuccessor(agentIndex, action) for action in legalActions
-    ]
-    return [
-        self.getValue(successor, agentIndex + 1, level + 1)
-        for successor in successors
-    ]
-
-# return a score
-def getValue(self, gameState: GameState, agentIndex=0, level=0):
-    if (
-        gameState.isWin()
-        or gameState.isLose()
-        or level == self.depth * gameState.getNumAgents()
-    ):
-        return self.evaluationFunction(gameState)
-    if agentIndex == 0:
-        return max(self.getNextLevel(gameState, agentIndex, level))
-    else:
-        return min(self.getNextLevel(gameState, agentIndex, level))
 ```
 
-#### right
 
-```python title="MinimaxAgent -> getAction v2"
-def getAction(self, gameState: GameState):
-    "*** YOUR CODE HERE ***"
-    def getValue(state, agentIndex, depth):
-        agentIndex = agentIndex % state.getNumAgents()
-        if state.isWin() or state.isLose() or depth == 0:
-            return self.evaluationFunction(state)
-        elif agentIndex == 0:
-            return max(
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    depth - 1,
-                )
-                for action in state.getLegalActions(agentIndex)
-            )
-        else:
-            return min(
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    depth - 1,
-                )
-                for action in state.getLegalActions(agentIndex)
-            )
-    # Pacman is always agent 0, and the agents move in order of increasing agent index.
-    legalActions = gameState.getLegalActions(0)
-    scores = [
-        getValue(
-            gameState.generateSuccessor(0, action),
-            1,
-            self.depth * gameState.getNumAgents() - 1,
-        )
-        for action in legalActions
-    ]
-    bestScore = max(scores)
-    bestIndices = [
-        index for index in range(len(scores)) if scores[index] == bestScore
-    ]
-    chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-    return legalActions[chosenIndex]
 ```
 
 [Q2 通过](attachments/project-2-5.png)
