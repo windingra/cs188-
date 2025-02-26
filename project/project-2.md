@@ -201,10 +201,9 @@ def evaluationFunction(self, currentGameState: GameState, action):
 
 ```
 
-
-```
-
 [Q2 通过](attachments/project-2-5.png)
+
+
 
 ### Q3 (5 pts): Alpha-Beta Pruning
 
