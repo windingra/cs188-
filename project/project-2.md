@@ -211,147 +211,52 @@ def evaluationFunction(self, currentGameState: GameState, action):
 
 在 [05-Trees_Minimax_Pruning](../note/05-Trees_Minimax_Pruning.md) 中我们提到了 [Alpha-Beta Pruning 的伪代码](attachments/project-2-10.png)，由上一题的代码，我们将其 agentIndex 不同时的操作更换即可：
 
-```python title="AlphaBetaAgent -> getAction v1"
-def getAction(self, gameState: GameState):
-    def max_value(state, agentIndex, level, alpha, beta):
-        v = float("-inf")
-        for action in state.getLegalActions(agentIndex):
-            v = max(
-                v,
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    level + 1,
-                    alpha,
-                    beta,
-                ),
-            )
-            if v > beta:
-                return v
-            alpha = max(alpha, v)
-        return v
-
-    def min_value(state, agentIndex, level, alpha, beta):
-        v = float("inf")
-        for action in state.getLegalActions(agentIndex):
-            v = min(
-                v,
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    level + 1,
-                    alpha,
-                    beta,
-                ),
-            )
-            if v < alpha:
-                return v
-            beta = min(beta, v)
-        return v
-
-    def getValue(state, agentIndex, level, alpha, beta):
-        agentIndex = agentIndex % state.getNumAgents()
-        if (
-            state.isWin()
-            or state.isLose()
-            or level == self.depth * gameState.getNumAgents() - 1
-        ):
-            return self.evaluationFunction(state)
-        elif agentIndex == 0:
-            return max_value(state, agentIndex, level, alpha, beta)
-        else:
-            return min_value(state, agentIndex, level, alpha, beta)
-
-    # Pacman is always agent 0, and the agents move in order of increasing agent index.
-    legalActions = gameState.getLegalActions(0)
-    alpha = float("-inf")
-    beta = float("inf")
-    scores = [
-        getValue(gameState.generateSuccessor(0, action), 1, 0, alpha, beta)
-        for action in legalActions
-    ]
-    bestScore = max(scores)
-    bestIndices = [
-        index for index in range(len(scores)) if scores[index] == bestScore
-    ]
-    chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-    return legalActions[chosenIndex]
-```
-
-但是运行依旧是失败的，部分测试无法通过。
-
 #### right
 
 参考 [szzxljr 的代码](https://github.com/szzxljr/CS188_Course_Projects/blob/master/proj2multiagent/multiAgents.py#L191) 我发现了问题：我在最后获取根节点的值是依旧遍历了其所有子代；在最后我们依旧应该剪枝：
 
 ```python title="AlphaBetaAgent -> getAction v2"
-def getAction(self, gameState: GameState):
-    "*** YOUR CODE HERE ***"
-
-    def getValue(state, agentIndex, level, alpha, beta):
-        agentIndex = agentIndex % state.getNumAgents()
-        if (
-            state.isWin()
-            or state.isLose()
-            or level == self.depth * state.getNumAgents()
-        ):
-            return self.evaluationFunction(state)
-        elif agentIndex == 0:
-            return max_value(state, agentIndex, level, alpha, beta)
-        else:
-            return min_value(state, agentIndex, level, alpha, beta)
-
-    def max_value(state, agentIndex, level, alpha, beta):
-        v = float("-inf")
-        for action in state.getLegalActions(agentIndex):
-            v = max(
-                v,
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    level + 1,
-                    alpha,
-                    beta,
-                ),
-            )
-            if v > beta:
-                return v
-            alpha = max(alpha, v)
-        return v
-
-    def min_value(state, agentIndex, level, alpha, beta):
-        v = float("inf")
-        for action in state.getLegalActions(agentIndex):
-            v = min(
-                v,
-                getValue(
-                    state.generateSuccessor(agentIndex, action),
-                    agentIndex + 1,
-                    level + 1,
-                    alpha,
-                    beta,
-                ),
-            )
-            if v < alpha:
-                return v
-            beta = min(beta, v)
-        return v
-
-    # Pacman is always agent 0, and the agents move in order of increasing agent index.
-    legalActions = gameState.getLegalActions(0)
-    alpha = float("-inf")
-    beta = float("inf")
-    bestScore = float("-inf")
-    bestAction = None
-
-    for action in legalActions:
-        score = getValue(gameState.generateSuccessor(0, action), 1, 1, alpha, beta)
-        if score > bestScore:
-            bestScore = score
-            bestAction = action
-        alpha = max(alpha, bestScore)
-
-    return bestAction
+    def getAction(self, gameState: GameState):
+        """
+        使用 self.depth 和 self.evaluationFunction 返回带有 alpha-beta 剪枝的极大极小动作
+        """
+        "*** 你可以在这里编写你的代码 ***"
+        def alpha_beta(agentIndex, depth, gameState, alpha, beta): #alpha和beta是值传递，相当于只有兄弟节点会互相影响
+            if gameState.isWin() or gameState.isLose() or depth == self.depth:
+                return self.evaluationFunction(gameState)
+            
+            if agentIndex == 0:  # Pacman's turn (maximizing player)
+                value = float('-inf')
+                for action in gameState.getLegalActions(agentIndex):
+                    value = max(value, alpha_beta(1, depth, gameState.generateSuccessor(agentIndex, action), alpha, beta))
+                    if value > beta:
+                        return value
+                    alpha = max(alpha, value)
+                return value
+            else:  # Ghosts' turn (minimizing player)
+                value = float('inf')
+                nextAgent = (agentIndex + 1) % gameState.getNumAgents()
+                nextDepth = depth + 1 if nextAgent == 0 else depth
+                for action in gameState.getLegalActions(agentIndex):
+                    value = min(value, alpha_beta(nextAgent, nextDepth, gameState.generateSuccessor(agentIndex, action), alpha, beta))
+                    if value < alpha:
+                        return value
+                    beta = min(beta, value)
+                return value
+        legalMoves = gameState.getLegalActions(0)
+        # 选择一个最佳的动作
+        a = -float('inf')
+        b = float('inf')
+        bestscore = -float('inf')
+        bestaction = None
+        for action in legalMoves:
+            scores = alpha_beta(1, 0, gameState.generateSuccessor(0, action),a , b) 
+            if scores > bestscore:
+                bestscore = scores
+                bestaction = action
+            a = max(a, bestscore)
+        
+        return bestaction
 ```
 
 [Q3 通过](attachments/project-2-9.png)
